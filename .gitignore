@@ -3,6 +3,9 @@
 Thumbs.db
 [Dd]esktop.ini
 
+# hyf
+.hyf/score.json
+
 # Editor and IDE settings
 .vscode/
 .idea/

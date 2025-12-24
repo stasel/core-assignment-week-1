@@ -21,35 +21,44 @@ jobs:
           node-version: "24"
 
       - name: Run tests
-        id: test
-        run: |
-          node .hyf/tester.js > test-output.txt 2>&1
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
-        continue-on-error: true
+        working-directory: .hyf
+        run: node tester.js > test-output.txt 2>&1
 
       - name: Read test output
         id: output
         run: |
-          OUTPUT=$(cat test-output.txt)
+          OUTPUT=$(cat .hyf/test-output.txt)
           echo "results<<EOF" >> $GITHUB_OUTPUT
           echo "$OUTPUT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Read score
+        id: score
+        run: |
+          SCORE=$(jq -r '.score' .hyf/score.json)
+          PASS=$(jq -r '.pass' .hyf/score.json)
+          PASSING_SCORE=$(jq -r '.passingScore' .hyf/score.json)
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "pass=$PASS" >> $GITHUB_OUTPUT
+          echo "passing_score=$PASSING_SCORE" >> $GITHUB_OUTPUT
 
       - name: Comment PR
         uses: actions/github-script@v7
         with:
           script: |
             const output = `${{ steps.output.outputs.results }}`;
-            const exitCode = '${{ steps.test.outputs.exit_code }}';
-            const status = exitCode === '0' ? '✅ Passed' : '❌ Failed';
+            const score = '${{ steps.score.outputs.score }}';
+            const pass = '${{ steps.score.outputs.pass }}' === 'true';
+            const passingScore = '${{ steps.score.outputs.passing_score }}';
+            const status = pass ? '✅ Passed' : '❌ Failed';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## Assignment Grade ${status}\n\n\`\`\`\n${output}\n\`\`\``
+              body: `## Assignment Grade ${status}\n\n**Score:** ${score}/${passingScore}\n\n<details>\n<summary>Test Details</summary>\n\n\`\`\`\n${output}\n\`\`\`\n\n</details>`
             });
 
       - name: Fail if tests failed
-        if: steps.test.outputs.exit_code != '0'
+        if: steps.score.outputs.pass != 'true'
         run: exit 1

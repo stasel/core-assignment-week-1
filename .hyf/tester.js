@@ -1,5 +1,6 @@
 import { task1 } from './task1.js';
 import { task2 } from './task2.js';
+import fs from 'fs/promises';
 
 const main = async () => {
   console.log('======================= Task 1 =======================');
@@ -10,18 +11,18 @@ const main = async () => {
 
   console.log('\n======================= Summary =======================');
   const totalScore = Math.min(100, Math.round(score1 * 0.7 + score2 * 0.3));
-  const minPassingScore = 70;
+  const passingScore = 70;
   console.log(`- Task 1 Score: ${score1}%`);
   console.log(`- Task 2 Score: ${score2}%`);
   console.log(`Total Score: ${totalScore}%`);
-  console.log(`Min passing score: ${minPassingScore}%`);
+  console.log(`Min passing score: ${passingScore}%`);
+  const results = {
+    score: totalScore,
+    pass: totalScore >= passingScore,
+    passingScore: passingScore
+  };
 
-
-  if (totalScore > 70) {
-    process.exit(0);
-  } else {
-    process.exit(1);
-  }
+  await fs.writeFile('score.json', JSON.stringify(results, null, 2));
 }
 
 try {
